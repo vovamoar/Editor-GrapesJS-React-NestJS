@@ -20,7 +20,7 @@ export class SitesController {
   @Get('sites')
   async getSites() {
     try {
-      return (await this.sitesService.getSiteList()) as string[];
+      return await this.sitesService.getSiteList();
     } catch {
       throw new HttpException(
         'Failed to get sites',
@@ -36,13 +36,11 @@ export class SitesController {
       const htmlPath = path.join(sitePath, 'index.html');
       let html = await fs.readFile(htmlPath, 'utf-8');
 
-      // Fix paths
       html = html.replace(/src="images\//g, `src="/static/${site}/images/`);
       html = html.replace(/href="css\//g, `href="/static/${site}/css/`);
       html = html.replace(/src="js\//g, `src="/static/${site}/js/`);
 
-      // Add extra styles if they exist
-      const styleFiles = [
+      const extraStyles = [
         'styles.css',
         'bootstrap.min.css',
         'materialize.min.css',
@@ -51,7 +49,7 @@ export class SitesController {
         'all.min.css',
       ];
 
-      for (const file of styleFiles) {
+      for (const file of extraStyles) {
         const filePath = path.join(sitePath, 'css', file);
         if (await fs.pathExists(filePath)) {
           html = html.replace(
@@ -61,7 +59,6 @@ export class SitesController {
         }
       }
 
-      // Inject JS
       const jsPath = path.join(sitePath, 'js', 'index.js');
       if (await fs.pathExists(jsPath)) {
         html = html.replace(
@@ -108,10 +105,7 @@ export class SitesController {
   @Get('editor/:site')
   async getEditorHtml(@Param('site') site: string, @Res() res: Response) {
     try {
-      const { html, css } = (await this.sitesService.getHtmlCss(site)) as {
-        html: string;
-        css: string;
-      };
+      const { html, css } = await this.sitesService.getHtmlCss(site);
 
       const cleanedHtml = html
         .replace(/src="images\//g, `src="/static/${site}/images/`)
@@ -121,71 +115,76 @@ export class SitesController {
           `src="/static/${site}/images/logo.webp"`,
         );
 
+      const safeHtml = JSON.stringify(cleanedHtml).replace(
+        /<\/script>/g,
+        '<\\/script>',
+      );
+
       const editorHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <title>Editor - ${site}</title>
-        <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet"/>
-        <style>body, html { margin: 0; height: 100%; }</style>
-      </head>
-      <body>
-        <button onclick="saveProject()" style="position:fixed;top:10px;left:10px;z-index:1000;">💾 Зберегти</button>
-        <div id="gjs" style="height: 100vh;"></div>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <title>Editor - ${site}</title>
+          <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet"/>
+          <style>body, html { margin: 0; height: 100%; }</style>
+        </head>
+        <body>
+          <button onclick="saveProject()" style="position:fixed;top:10px;left:10px;z-index:1000;">💾 Зберегти</button>
+          <div id="gjs" style="height: 100vh;"></div>
 
-        <script src="https://unpkg.com/grapesjs"></script>
-        <script src="https://unpkg.com/grapesjs-blocks-basic"></script>
+          <script src="https://unpkg.com/grapesjs"></script>
+          <script src="https://unpkg.com/grapesjs-blocks-basic"></script>
 
-        <script>
-          const editor = grapesjs.init({
-            container: '#gjs',
-            fromElement: false,
-            components: \`${cleanedHtml}\`,
-            style: \`${css}\`,
-            height: '100%',
-            width: 'auto',
-            plugins: ['gjs-blocks-basic'],
-            pluginsOpts: {
-              'gjs-blocks-basic': {
-                flexGrid: true,
-                blocks: [
-                  'column1', 'column2', 'column3', 'text', 'link',
-                  'image', 'video', 'map', 'quote', 'button',
-                  'section', 'list-items', 'grid-items', 'text-basic'
-                ],
+          <script>
+            const editor = grapesjs.init({
+              container: '#gjs',
+              fromElement: false,
+              components: ${safeHtml},
+              style: \`${css}\`,
+              height: '100%',
+              width: 'auto',
+              plugins: ['gjs-blocks-basic'],
+              pluginsOpts: {
+                'gjs-blocks-basic': {
+                  flexGrid: true,
+                  blocks: [
+                    'column1', 'column2', 'column3', 'text', 'link',
+                    'image', 'video', 'map', 'quote', 'button',
+                    'section', 'list-items', 'grid-items', 'text-basic'
+                  ],
+                },
               },
-            },
-            storageManager: { type: null },
-            assetManager: {
-              embedAsBase64: false,
-              upload: false,
-              assets: [
-                '/static/${site}/images/logo.webp',
-                '/static/${site}/images/windows.png',
-                '/static/${site}/images/decore.webp'
-              ]
+              storageManager: { type: null },
+              assetManager: {
+                embedAsBase64: false,
+                upload: false,
+                assets: [
+                  '/static/${site}/images/logo.webp',
+                  '/static/${site}/images/windows.png',
+                  '/static/${site}/images/decore.webp'
+                ]
+              }
+            });
+
+            function saveProject() {
+              const html = editor.getHtml();
+              const css = editor.getCss();
+
+              fetch('http://localhost:5000/api/save/${site}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ html, css })
+              })
+              .then(() => {
+                alert('✅ Збережено!');
+                window.open('http://localhost:5000/api/preview/${site}?v=' + Date.now(), '_blank');
+              })
+              .catch(() => alert('❌ Помилка збереження'));
             }
-          });
-
-          function saveProject() {
-            const html = editor.getHtml();
-            const css = editor.getCss();
-
-            fetch('http://localhost:5000/api/save/${site}', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ html, css })
-            })
-            .then(() => {
-              alert('✅ Збережено!');
-              window.open('http://localhost:5000/api/preview/${site}?v=' + Date.now(), '_blank');
-            })
-            .catch(() => alert('❌ Помилка збереження'));
-          }
-        </script>
-      </body>
-      </html>
+          </script>
+        </body>
+        </html>
       `;
 
       res.type('html').send(editorHtml);
