@@ -105,6 +105,7 @@ export class SitesController {
   @Get('editor/:site')
   async getEditorHtml(@Param('site') site: string, @Res() res: Response) {
     try {
+      const sitePath = path.join(__dirname, '../../sites-storage', site);
       const { html, css } = await this.sitesService.getHtmlCss(site);
 
       const cleanedHtml = html
@@ -114,6 +115,18 @@ export class SitesController {
           /src="data:image\/[^"]+"/g,
           `src="/static/${site}/images/logo.webp"`,
         );
+
+      const cssDir = path.join(sitePath, 'css');
+      let stylesLinks = '';
+
+      if (await fs.pathExists(cssDir)) {
+        const files = await fs.readdir(cssDir);
+        for (const file of files) {
+          if (file.endsWith('.css')) {
+            stylesLinks += `<link rel="stylesheet" href="/static/${site}/css/${file}">\n`;
+          }
+        }
+      }
 
       const safeHtml = JSON.stringify(cleanedHtml).replace(
         /<\/script>/g,
@@ -127,6 +140,7 @@ export class SitesController {
           <meta charset="UTF-8">
           <title>Editor - ${site}</title>
           <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet"/>
+          ${stylesLinks}
           <style>body, html { margin: 0; height: 100%; }</style>
         </head>
         <body>
