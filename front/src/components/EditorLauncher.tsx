@@ -6,7 +6,7 @@ export default function EditorLauncher() {
 
 	useEffect(() => {
 		if (site) {
-			window.location.href = `http://localhost:5000/editor/${site}`
+			window.location.href = `http://localhost:5001/editor/${site}`
 		}
 	}, [site])
 

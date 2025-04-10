@@ -1,17 +1,16 @@
 import { Eye, Pencil } from 'lucide-react'
-import React from 'react'
 
 interface CardProps {
 	siteName: string
 }
 
-const Card: React.FC<CardProps> = ({ siteName }) => {
+const Card = ({ siteName }: CardProps) => {
 	const handlePreview = () => {
-		window.open(`http://localhost:5000/api/preview/${siteName}`, '_blank')
+		window.open(`http://localhost:5001/api/preview/${siteName}`, '_blank')
 	}
 
 	const handleEdit = () => {
-		window.open(`http://localhost:5000/api/editor/${siteName}`, '_blank')
+		window.open(`http://localhost:5001/api/editor/${siteName}`, '_blank')
 	}
 
 	return (

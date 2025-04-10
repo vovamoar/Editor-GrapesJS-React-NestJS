@@ -1,8 +1,8 @@
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Card from './Card'
 
-const Home: React.FC = () => {
+const Home = () => {
 	const [sites, setSites] = useState<string[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -10,10 +10,10 @@ const Home: React.FC = () => {
 	useEffect(() => {
 		async function fetchSites() {
 			try {
-				const res = await axios.get<string[]>('http://localhost:5000/api/sites')
+				const res = await axios.get<string[]>('http://localhost:5001/api/sites')
 				setSites(res.data)
 			} catch {
-				setError('❌ Не вдалося завантажити сайти')
+				setError('❌ Error while fetching sites')
 			} finally {
 				setLoading(false)
 			}
@@ -23,7 +23,7 @@ const Home: React.FC = () => {
 	}, [])
 
 	if (loading)
-		return <div className='p-8 text-xl text-gray-600'>Завантаження...</div>
+		return <div className='p-8 text-xl text-gray-600'>Loading...</div>
 	if (error) return <div className='p-8 text-red-600'>{error}</div>
 
 	return (
