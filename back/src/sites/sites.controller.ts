@@ -155,7 +155,7 @@ export class SitesController {
               container: '#gjs',
               fromElement: false,
               components: ${safeHtml},
-              style: \`${css}\`,
+              style: ${JSON.stringify(css)},
               height: '100%',
               width: 'auto',
               plugins: ['gjs-blocks-basic'],

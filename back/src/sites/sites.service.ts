@@ -24,10 +24,29 @@ export class SitesService {
       path.join(SITES_DIR, site, 'index.html'),
       'utf8',
     )
-    const css = await fs.readFile(
-      path.join(SITES_DIR, site, 'css/styles.css'),
-      'utf8',
-    )
+
+    const cssDir = path.join(SITES_DIR, site, 'css')
+    let css = ''
+
+    if (await fs.pathExists(cssDir)) {
+      const extraStyles = [
+        'styles.css',
+        'bootstrap.min.css',
+        'materialize.min.css',
+        'tailwind.min.css',
+        'bulma.min.css',
+        'all.min.css',
+      ]
+
+      for (const file of extraStyles) {
+        const filePath = path.join(cssDir, file)
+        if (await fs.pathExists(filePath)) {
+          const fileContent = await fs.readFile(filePath, 'utf8')
+          css += `/* ${file} */\n${fileContent}\n\n`
+        }
+      }
+    }
+
     return { html, css }
   }
 
