@@ -1,5 +1,5 @@
+
 document.addEventListener('DOMContentLoaded', function () {
-	// Variables
 	const navToggle = document.querySelector('.nav__toggle')
 	const navList = document.querySelector('.nav__list')
 	const navLinks = document.querySelectorAll('.nav__link')
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const rect = el.getBoundingClientRect()
 		return (
 			rect.top <=
-				(window.innerHeight || document.documentElement.clientHeight) &&
+			(window.innerHeight || document.documentElement.clientHeight) &&
 			rect.bottom >= 0
 		)
 	}
